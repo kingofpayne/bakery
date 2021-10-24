@@ -1,0 +1,3 @@
+[workspace]
+
+members = ["bakery", "bakery-derive"]

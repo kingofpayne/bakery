@@ -1,0 +1,48 @@
+WHITESPACE = _{ " " | "\n" | "\r" }
+
+identifier = @{ ASCII_ALPHANUMERIC+ }
+
+member = { identifier ~ ":" ~ rec_type_anonymous }
+
+// structures, enum and tuples must have an identifier when declared in a
+// namespace. They must not have an identifier when used inline for structure
+// member. This is enforced by pest with the _anonymous rules here.
+rec_type = _{ rec_struct | rec_enum | rec_tuple | identifier }
+rec_type_anonymous = _{ rec_struct_anonymous | rec_enum_anonymous | rec_tuple | rec_type_inst }
+rec_type_inst = { identifier ~ rec_generic_inst? }
+rec_tuple = { "(" ~ rec_type ~ ("," ~ rec_type)* ~ ")" }
+rec_struct = { "struct" ~ identifier ~ rec_generic_decl? ~ rec_struct_declarations }
+rec_struct_anonymous = { "struct" ~ rec_struct_declarations }
+rec_struct_declarations = {
+    "{" ~ "}" |
+    "{" ~ rec_struct_declaration ~ ("," ~ rec_struct_declaration)* ~ "}"
+}
+rec_struct_declaration = _{ rec_struct | rec_enum | member }
+rec_generic_decl = { "<" ~ identifier ~ ("," ~ identifier)* ~ ">" }
+rec_generic_inst = { "<" ~ rec_type_anonymous ~ ("," ~ rec_type_anonymous)* ~ ">" }
+
+rec_enum = {"enum" ~ identifier ~ "{" ~ rec_enum_values? ~ "}" }
+rec_enum_anonymous = {"enum" ~ "{" ~ rec_enum_values? ~ "}" }
+rec_enum_values = { rec_enum_value ~ ("," ~ rec_enum_value )* }
+rec_enum_value = { identifier ~ (rec_enum_tuple | rec_struct_declarations)? }
+rec_enum_tuple = { "(" ~ identifier ~ ("," ~ identifier)* ~ ")" }
+
+uint = @{ ASCII_DIGIT+ }
+int = @{ ("-" | "+")? ~ ASCII_DIGIT+ }
+float = @{ "NaN" | "-inf" | "inf" | ("-"? ~ ((uint ~ ("." ~ uint)) | ("." ~ uint)) ~ (("e" | "E") ~ int)? ) }
+
+dat_map = {
+    "{" ~ "}" |
+    "{" ~ dat_assignment ~ ("," ~ dat_assignment)* ~ "}"
+}
+
+dat_enum = { identifier ~ (dat_tuple | dat_map)? }
+dat_tuple = { "(" ~ dat_value ~ ("," ~ dat_value)* ~ ")" }
+dat_list = { "[" ~ dat_value ~ ("," ~ dat_value)* ~ "]" }
+
+dat_value = _{ float | int | dat_enum | dat_map | dat_tuple | dat_list }
+dat_assignment = { dat_value ~ ":" ~ dat_value }
+dat = { (dat_assignment ~ ("," ~ dat_assignment)*)+ }
+
+file_rec = { WHITESPACE* ~ rec_struct_declaration ~ ("," ~ rec_struct_declaration)* }
+file_dat = _{ WHITESPACE* ~ dat }

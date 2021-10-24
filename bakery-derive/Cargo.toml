@@ -1,0 +1,16 @@
+[package]
+name = "bakery-derive"
+version = "0.1.0"
+authors = ["Olivier Hériveaux"]
+edition = "2018"
+license = "MIT OR Apache-2.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+syn = "1.0.76"
+quote = "1.0.9"
+proc-macro2 = "1.0.29"
+
+[lib]
+proc-macro = true
