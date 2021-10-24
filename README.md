@@ -1,6 +1,6 @@
 # Bakery
 
-A Rust library to deserialize binary objects from text data files.
+A Rust library to deserialize binary objects from structured text data files.
 
 ## Basic example
 
