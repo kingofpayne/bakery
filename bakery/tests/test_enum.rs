@@ -10,7 +10,7 @@ fn test_basic_enum() {
         A,
         B,
         C,
-    };
+    }
     let rec = "enum E { A, B, C }, x: E";
     test_compile_ser(rec, "x: A", Some(&hex!("00000000")), E::A);
     test_compile_ser(rec, "x: B", Some(&hex!("01000000")), E::B);
@@ -24,7 +24,7 @@ fn test_enum_tuple() {
         A(u32),
         B(bool),
         C(i32, bool),
-    };
+    }
     let rec = "enum E { A(u32), B(bool), C(i32, bool) }, x: E";
     test_compile_ser(rec, "x: A(0)", Some(&hex!("0000000000000000")), E::A(0));
     test_compile_ser(rec, "x: A(1)", Some(&hex!("0000000001000000")), E::A(1));
@@ -57,7 +57,7 @@ fn test_enum_struct() {
         A { a: u32 },
         B { b: bool },
         C { c: i32, d: bool },
-    };
+    }
     let rec = "enum E { A { a: u32 }, B { b: bool }, C { c: i32, d: bool } }, x: E";
     test_compile_ser(
         rec,
@@ -74,7 +74,7 @@ fn test_enum_empty_struct() {
         A {},
         B {},
         C {},
-    };
+    }
     let rec = "enum E { A { }, B { }, C { } }, x: E";
     test_compile_ser(rec, "x: A { }", Some(&hex!("00000000")), E::A {});
     test_compile_ser(rec, "x: B { }", Some(&hex!("01000000")), E::B {});
@@ -88,7 +88,7 @@ fn test_inline_enum() {
         A,
         B,
         C,
-    };
+    }
     let rec = "x: enum { A, B, C }";
     test_compile(rec, "x: A", &hex!("00000000"));
     test_compile(rec, "x: B", &hex!("01000000"));

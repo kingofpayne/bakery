@@ -18,7 +18,7 @@ fn test_derive_simple() {
     struct S {
         x: i32,
         y: i32,
-    };
+    }
 
     let s = load_struct_from_string::<S>("x: 1, y: 2");
     assert_eq!(s, S { x: 1, y: 2 });
@@ -30,13 +30,13 @@ fn test_derive_nested() {
     struct A {
         x: i32,
         y: i32,
-    };
+    }
 
     #[derive(Deserialize, PartialEq, Eq, Debug, Recipe)]
     struct B {
         a: A,
         b: A,
-    };
+    }
 
     let s = load_struct_from_string::<B>("a: { x: 1, y: 2 }, b: { x: 3, y: 4 }");
     assert_eq!(
@@ -54,13 +54,13 @@ fn test_derive_generic() {
     struct A<T> {
         x: T,
         y: T,
-    };
+    }
 
     #[derive(Deserialize, PartialEq, Eq, Debug, Recipe)]
     struct B {
         a: A<i32>,
         b: A<bool>,
-    };
+    }
 
     let s = load_struct_from_string::<B>("a: { x: 1, y: 2 }, b: { x: true, y: false }");
     assert_eq!(
