@@ -187,8 +187,9 @@ pub enum NodeContent {
     RecTypeInst {
         tid: RecTypeId,
     },
-    /// Generic type node which may be child of RecStruct or native generic types such as RecList
-    /// `index` field correspond to the index of the generic type in the parent type.
+    /// Generic type node which may be child of `RecStruct` or native generic types such as
+    /// `RecList`.
+    /// `index` field corresponds to the index of the generic type in the parent type.
     RecGeneric {
         index: u32,
     },
@@ -346,12 +347,97 @@ impl NodeTree {
         nid
     }
 
+    /// Create a recipe enumeration node and return node Id.
+    ///
+    /// # Arguments
+    ///
+    /// * `parent` - Parent node
+    /// * `name` - Enumeration name
+    pub fn create_enum(&mut self, parent: Option<u32>, name: &str, nid_key_type: u32) -> u32 {
+        self.create_with_parent(
+            parent,
+            Node {
+                name: Some(name.to_string()),
+                source: None,
+                content: NodeContent::RecEnum {
+                    key_type: RecTypeId::Id(nid_key_type)
+                }
+            }
+        )
+    }
+
+    /// Create an enumeration member node and return node Id.
+    ///
+    /// # Arguments
+    ///
+    /// * `parent` - Parent node
+    /// * `name` - Enumeration member name
+    pub fn create_enum_member(&mut self, parent: u32, name: &str, value: BigInt) -> u32 {
+        self.create_with_parent(
+            Some(parent),
+            Node {
+                name:Some(name.to_string()),
+                source: None,
+                content: NodeContent::RecEnumItem { value: value }
+            }
+        )
+    }
+
+    /// Create a tuple node and return node Id.
+    ///
+    /// # Arguments
+    ///
+    /// * `parent` - Parent node
+    pub fn create_tuple(&mut self, parent: Option<u32>) -> u32 {
+        self.create_with_parent(
+            parent,
+            Node::new_anonymous( NodeContent::RecTuple )
+        )
+    }
+
+    /// Create a tuple item node and return node Id.
+    ///
+    /// # Arguments
+    ///
+    /// * `parent` - Parent node
+    /// * `ty` - Type node
+    pub fn create_tuple_member(&mut self, parent: u32, ty: u32) -> u32 {
+        self.create_with_parent(
+            Some(parent),
+            Node::new_anonymous(
+                NodeContent::RecTupleMember {
+                    tid: RecTypeId::Id(ty)
+                }
+            )
+        )
+    }
+
+    /// Parse a type recipe from a string, return recipe node Id.
+    ///
+    /// # Arguments
+    ///
+    /// * `rec` - Recipe string
+    pub fn parse_recipe_string(&mut self, rec: &str) -> Result<u32, ParseError> {
+        let rec = rec.trim_end();
+        let mut pairs = MyParser::parse(Rule::rec_type_anonymous, rec).unwrap();
+        let pair = pairs.next().unwrap();
+        let span = pair.as_span();
+        assert!(pairs.next().is_none());
+        // Check the the whole string has been parsed.
+        // pest will match as much as it can, so if there's garbage at the end, it will be ignored.
+        // We don't want to ignore this garbage.
+        if span.end() != rec.len() {
+            return Err(ParseError::IncompleteRecParse(span.end()));
+        }
+        Ok(self.parse_rec_type(Rc::new(rec.to_string()), pair))
+    }
+
     /// Build recipe from a string, return recipe node Id.
     ///
     /// # Arguments
     ///
     /// * `rec` - Recipe string
-    fn parse_recipe_string(&mut self, rec: &str) -> Result<u32, ParseError> {
+    fn parse_struct_recipe_string(&mut self, rec: &str) -> Result<u32, ParseError> {
         // Parse recipe
         let rec = rec.trim_end();
         let mut pairs = MyParser::parse(Rule::file_rec, rec).unwrap();
@@ -862,7 +948,7 @@ impl NodeTree {
         }
     }
 
-    fn populate_natives(&mut self, node: u32) {
+    pub fn populate_natives(&mut self, node: u32) {
         let natives = [
             (
                 "i8",
@@ -1012,7 +1098,7 @@ fn write_int_check_bounds(
 }
 
 pub struct Compiler<'a> {
-    tree: NodeTree,
+    pub tree: NodeTree,
     io: &'a mut dyn std::io::Write,
     errors: Vec<CompilationError>,
     generic_stack: Vec<Vec<u32>>,
@@ -1043,7 +1129,7 @@ impl Compiler<'_> {
     /// # Arguments
     ///
     /// * `nid` - Node to be resolved. Children nodes are resolved recursively.
-    fn resolve_types(&mut self, nid: u32) {
+    pub fn resolve_types(&mut self, nid: u32) {
         let node = self.tree.get(nid);
         match node.content.clone() {
             NodeContent::RecInt { .. }
@@ -1229,7 +1315,7 @@ impl Compiler<'_> {
     ///
     /// * `rec_node` - Id of the recipe node
     /// * `dat_node` - Id of the data node
-    fn write(&mut self, rec_node: u32, dat_node: u32) -> WriteResult {
+    pub fn write(&mut self, rec_node: u32, dat_node: u32) -> WriteResult {
         match self.tree.get(rec_node).content.clone() {
             NodeContent::RecInt { bit_size, signed } => {
                 self.write_int(rec_node, dat_node, bit_size, signed);
@@ -1612,7 +1698,7 @@ impl Compiler<'_> {
 
     pub fn compile(&mut self, rec: &str, dat: &str, print_errs: bool) -> Result<(), ()> {
         self.tree.clear();
-        match self.tree.parse_recipe_string(rec) {
+        match self.tree.parse_struct_recipe_string(rec) {
             Ok(main_struct_node) => {
                 // Add standard types
                 self.tree.populate_natives(main_struct_node);

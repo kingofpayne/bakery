@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{Node, NodeContent, NodeTree, RecTypeId};
 use num_bigint::BigInt;
 
@@ -107,6 +109,18 @@ impl Recipe for i64 {
     }
 }
 
+impl Recipe for f32 {
+    fn recipe(tree: &mut NodeTree) -> u32 {
+        tree.create(Node::new_builtin("f32", NodeContent::RecFloat { size: 32 } ))
+    }
+}
+
+impl Recipe for f64 {
+    fn recipe(tree: &mut NodeTree) -> u32 {
+        tree.create(Node::new_builtin("f32", NodeContent::RecFloat { size: 64 } ))
+    }
+}
+
 impl Recipe for bool {
     fn recipe(tree: &mut NodeTree) -> u32 {
         let node_u8 = u8::recipe(tree);
@@ -148,6 +162,17 @@ impl <T: Recipe> Recipe for Vec<T> {
         let nid = tree.create(Node::new_anonymous(NodeContent::RecList));
         tree.child(nid, t);
         nid
+    }
+}
+
+impl <K: Recipe, T: Recipe> Recipe for HashMap<K, T> {
+    fn recipe(tree: &mut NodeTree) -> u32 {
+        let node_k = K::recipe(tree);
+        let node_t = T::recipe(tree);
+        let node = tree.create(Node::new_anonymous(NodeContent::RecMap));
+        tree.child(node, node_k);
+        tree.child(node, node_t);
+        node
     }
 }
 

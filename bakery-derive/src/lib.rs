@@ -16,14 +16,33 @@ pub fn derive_bakery(input: proc_macro::TokenStream) -> proc_macro::TokenStream 
     // add_trait_bounds will mark generic types to impl the trait `bakery::Recipe`
     let generics = add_trait_bounds(input.generics);
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+
     let fields = recipe_token_stream(&input.data);
+
+    let implementation = match input.data {
+        Data::Struct(_) => {
+            quote! {
+                let nid = tree.create_struct(None, "S");
+                #fields
+                nid
+            }
+        }
+        Data::Enum(_) => {
+            quote! {
+                let nid_storage_ty = i32::recipe(tree);
+                let nid = tree.create_enum(None, "E", nid_storage_ty);
+                let mut next_enum_value = 0;
+                #fields
+                nid
+            }
+        }
+        Data::Union(_) => unimplemented!()
+    };
 
     let expanded = quote! {
         impl #impl_generics bakery::Recipe for #name #ty_generics #where_clause {
             fn recipe(tree: &mut bakery::NodeTree) -> u32 {
-                let nid = tree.create_struct(None, "S");
-                #fields
-                nid
+                #implementation
             }
         }
     };
@@ -63,6 +82,52 @@ fn recipe_token_stream(data: &Data) -> TokenStream {
                 Fields::Unnamed(_) | Fields::Unit => unimplemented!(),
             }
         }
-        Data::Enum(_) | Data::Union(_) => unimplemented!(),
+        Data::Enum(ref data) => {
+            let quotes_variant = data.variants.iter().map(|variant| {
+                let name = &    variant.ident;
+                let quote_fields = match variant.fields {
+                    Fields::Named(ref fields) => {
+                        // This enumeration has named values
+                        // We create a `RecStruct` node as a child of a `RecEnumItem` node.
+                        let quotes_fields = fields.named.iter().map(|f| {
+                            let name = &f.ident;
+                            let ty = &f.ty;
+                            quote! {
+                                let nid_ty = <#ty> :: recipe(tree);
+                                tree.create_struct_member(nid_struct, stringify!(#name), nid_ty);
+                            }
+                        });
+                        quote! {
+                            let nid_struct = tree.create_struct(Some(nid_variant), "");
+                            #( #quotes_fields )*
+                        }
+                    }
+                    Fields::Unnamed(ref fields) => {
+                        // This enumeration has tuple data
+                        // We create a `RecTuple` node as a child of a `RecEnumItem` node.
+                        let quotes_fields = fields.unnamed.iter().map(|f| {
+                            let ty = &f.ty;
+                            quote! {
+                                let nid_ty = <#ty> :: recipe(tree);
+                                tree.create_tuple_member(nid_tuple, nid_ty);
+                            }
+                        });
+                        quote! {
+                            let nid_tuple = tree.create_tuple(Some(nid_variant));
+                            #( #quotes_fields )*
+                        }
+                    }
+                    Fields::Unit => quote!{}
+                };
+                quote! {
+                    let nid_variant = tree.create_enum_member(nid, stringify!(#name), next_enum_value.into());
+                    #quote_fields
+                }
+            });
+            quote! {
+                #( #quotes_variant )*
+            }
+        }
+        Data::Union(_) => unimplemented!(),
     }
 }

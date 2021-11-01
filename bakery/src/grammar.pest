@@ -8,7 +8,7 @@ member = { identifier ~ ":" ~ rec_type_anonymous }
 // namespace. They must not have an identifier when used inline for structure
 // member. This is enforced by pest with the _anonymous rules here.
 rec_type = _{ rec_struct | rec_enum | rec_tuple | identifier }
-rec_type_anonymous = _{ rec_struct_anonymous | rec_enum_anonymous | rec_tuple | rec_type_inst }
+rec_type_anonymous = _{ rec_struct_anonymous | rec_enum_anonymous | rec_tuple | rec_type_inst | identifier }
 rec_type_inst = { identifier ~ rec_generic_inst? }
 rec_tuple = { "(" ~ rec_type ~ ("," ~ rec_type)* ~ ")" }
 rec_struct = { "struct" ~ identifier ~ rec_generic_decl? ~ rec_struct_declarations }

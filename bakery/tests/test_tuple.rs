@@ -4,32 +4,32 @@ use common::{test_compile_ser, test_load_from_string};
 
 #[test]
 fn test_tuple() {
-    let rec = "x: (i32)";
-    test_compile_ser(rec, "x: (0)", Some(&hex!("00000000")), (0i32,));
-    test_compile_ser(rec, "x: (1)", Some(&hex!("01000000")), (1i32,));
+    let rec = "(i32)";
+    test_compile_ser(rec, "(0)", Some(&hex!("00000000")), (0i32,));
+    test_compile_ser(rec, "(1)", Some(&hex!("01000000")), (1i32,));
     test_compile_ser(
         rec,
-        "x: (-1997293040)",
+        "(-1997293040)",
         Some(&hex!("10baf388")),
         (-1997293040i32,),
     );
     test_compile_ser(
         rec,
-        "x: (150517066)",
+        "(150517066)",
         Some(&hex!("4ab5f808")),
         (150517066i32,),
     );
 
-    let rec = "x: (bool, u32)";
+    let rec = "(bool, u32)";
     test_compile_ser(
         rec,
-        "x: (false, 3725879192)",
+        "(false, 3725879192)",
         Some(&hex!("00986714de")),
         (false, 3725879192u32),
     );
     test_compile_ser(
         rec,
-        "x: (true, 3017113990)",
+        "(true, 3017113990)",
         Some(&hex!("018681d5b3")),
         (true, 3017113990u32),
     );
