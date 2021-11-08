@@ -7,9 +7,10 @@ use serde::Deserialize;
 
 #[test]
 fn test_whitespaces() {
-    test_compile("x :  i8", "x  :  42", &hex!("2a"));
-    test_compile(" x: i8", " x : 42", &hex!("2a"));
-    test_compile("x: i8 ", "x: 42 ", &hex!("2a"));
+    test_compile("  i8", "  42", &hex!("2a"));
+    test_compile(" i8", " 42", &hex!("2a"));
+    test_compile("i8 ", "42 ", &hex!("2a"));
+    test_compile("i8  ", "42  ", &hex!("2a"));
 }
 
 #[test]

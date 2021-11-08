@@ -90,8 +90,8 @@ fn test_inline_enum() {
         B,
         C,
     }
-    let rec = "x: enum { A, B, C }";
-    test_compile(rec, "x: A", &hex!("00000000"));
-    test_compile(rec, "x: B", &hex!("01000000"));
-    test_compile(rec, "x: C", &hex!("02000000"));
+    let rec = "enum { A, B, C }";
+    test_compile(rec, "A", &hex!("00000000"));
+    test_compile(rec, "B", &hex!("01000000"));
+    test_compile(rec, "C", &hex!("02000000"));
 }

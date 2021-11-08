@@ -310,6 +310,11 @@ impl NodeTree {
         nid
     }
 
+    /// Create a recipe structure node with no name and no parent
+    pub fn create_root_struct(&mut self) -> u32 {
+        self.create(Node::new_anonymous(NodeContent::RecStruct))
+    }
+
     /// Create a recipe structure node and return node Id.
     ///
     /// # Arguments
@@ -418,7 +423,7 @@ impl NodeTree {
     ///
     /// * `rec` - Recipe string
     pub fn parse_recipe_string(&mut self, rec: &str) -> Result<u32, ParseError> {
-        let rec = rec.trim_end();
+        let rec = rec.trim_start().trim_end();
         let mut pairs = MyParser::parse(Rule::rec_type_anonymous, rec).unwrap();
         let pair = pairs.next().unwrap();
         let span = pair.as_span();
@@ -439,7 +444,7 @@ impl NodeTree {
     /// * `rec` - Recipe string
     fn parse_struct_recipe_string(&mut self, rec: &str) -> Result<u32, ParseError> {
         // Parse recipe
-        let rec = rec.trim_end();
+        let rec = rec.trim_start().trim_end();
         let mut pairs = MyParser::parse(Rule::file_rec, rec).unwrap();
         let pair = pairs.next().unwrap();
         let span = pair.as_span();
@@ -467,7 +472,7 @@ impl NodeTree {
     ///
     /// * `dat` - Data string
     pub fn parse_dat_value_string(&mut self, dat: &str) -> Result<u32, ParseError> {
-        let dat = dat.trim_end();
+        let dat = dat.trim_start().trim_end();
         let mut pairs = MyParser::parse(Rule::dat_value, dat).unwrap();
         let pair = pairs.next().unwrap();
         let span = pair.as_span();
@@ -487,7 +492,7 @@ impl NodeTree {
     ///
     /// * `dat` - Data string, struct format without the braces.
     pub fn parse_dat_map_string(&mut self, dat: &str) -> Result<u32, ParseError> {
-        let dat = dat.trim_end();
+        let dat = dat.trim_start().trim_end();
         let mut pairs = MyParser::parse(Rule::file_dat, dat).unwrap();
         let pair = pairs.next().unwrap();
         let span = pair.as_span();
@@ -948,7 +953,7 @@ impl NodeTree {
         }
     }
 
-    pub fn populate_natives(&mut self, node: u32) {
+    fn populate_natives(&mut self, node: u32) {
         let natives = [
             (
                 "i8",
@@ -1097,8 +1102,8 @@ fn write_int_check_bounds(
     }
 }
 
-pub struct Compiler<'a> {
-    pub tree: NodeTree,
+struct Compiler<'a> {
+    tree: NodeTree,
     io: &'a mut dyn std::io::Write,
     errors: Vec<CompilationError>,
     generic_stack: Vec<Vec<u32>>,
@@ -1129,7 +1134,7 @@ impl Compiler<'_> {
     /// # Arguments
     ///
     /// * `nid` - Node to be resolved. Children nodes are resolved recursively.
-    pub fn resolve_types(&mut self, nid: u32) {
+    fn resolve_types(&mut self, nid: u32) {
         let node = self.tree.get(nid);
         match node.content.clone() {
             NodeContent::RecInt { .. }
@@ -1315,7 +1320,7 @@ impl Compiler<'_> {
     ///
     /// * `rec_node` - Id of the recipe node
     /// * `dat_node` - Id of the data node
-    pub fn write(&mut self, rec_node: u32, dat_node: u32) -> WriteResult {
+    fn write(&mut self, rec_node: u32, dat_node: u32) -> WriteResult {
         match self.tree.get(rec_node).content.clone() {
             NodeContent::RecInt { bit_size, signed } => {
                 self.write_int(rec_node, dat_node, bit_size, signed);
@@ -1698,19 +1703,20 @@ impl Compiler<'_> {
 
     pub fn compile(&mut self, rec: &str, dat: &str, print_errs: bool) -> Result<(), ()> {
         self.tree.clear();
-        match self.tree.parse_struct_recipe_string(rec) {
-            Ok(main_struct_node) => {
-                // Add standard types
-                self.tree.populate_natives(main_struct_node);
-                self.resolve_types(main_struct_node);
+        let node_root = self.tree.create_root_struct();
+        self.tree.populate_natives(node_root); // Add standard types
+        match self.tree.parse_recipe_string(rec) {
+            Ok(node_rec) => {
+                self.tree.child(node_root, node_rec);
+                self.resolve_types(node_root);
                 // resolve_types may generate errors if some types are unknown. In that case, the tree
                 // will have dangling references to types, which is not supported for the rest of the
                 // compilation.
                 if self.errors.len() == 0 {
                     // Parse data
-                    match self.tree.parse_dat_map_string(dat) {
-                        Ok(data_node) => {
-                            if let Err(e) = self.write(main_struct_node, data_node) {
+                    match self.tree.parse_dat_value_string(dat) {
+                        Ok(node_dat) => {
+                            if let Err(e) = self.write(node_rec, node_dat) {
                                 self.error(CompilationError::IOError(e));
                             }
                         }
@@ -1838,6 +1844,7 @@ fn print_errors(tree: &NodeTree, errors: &Vec<CompilationError>) {
     }
 }
 
+#[derive(Debug)]
 pub enum LoadError {
     CompilationErrors,
     InvalidRecExtension,
@@ -1877,6 +1884,25 @@ fn is_compilation_required(
         },
         // binary file does not exist, we must compile
         Err(_) => Ok(true),
+    }
+}
+
+/// Write the binary representation of string data to be compiled, with the recipe given as a
+/// string.
+///
+/// # Arguments
+///
+/// * `dest` - A writable stream
+/// * `rec` - Recipe string
+/// * `dat` - Data string
+pub fn write_from_string_with_recipe<'a>(out: &'a mut dyn std::io::Write, rec: &str, dat: &str)
+    -> Result<(), LoadError>
+{
+    let mut compiler = Compiler::new(out);
+    if let Err(()) = compiler.compile(rec, dat, true) {
+        return Err(LoadError::CompilationErrors)
+    } else {
+        Ok(())
     }
 }
 

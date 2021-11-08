@@ -1,4 +1,4 @@
-use bakery::{Compiler, Recipe, load_from_string};
+use bakery::{Recipe, load_from_string, write_from_string_with_recipe};
 use core::fmt::Debug;
 use serde::{Deserialize, Serialize};
 use std::cmp::PartialEq;
@@ -22,9 +22,7 @@ pub fn vec_and(a: &Vec<u8>, b: &Vec<u8>) -> Vec<u8> {
 /// * `expect` - Expected binary result
 pub fn test_compile(rec: &str, dat: &str, expect: &[u8]) {
     let mut out = Vec::<u8>::new();
-    let mut compiler = Compiler::new(&mut out);
-    let result = compiler.compile(rec, dat, true);
-    assert!(result.is_ok());
+    write_from_string_with_recipe(&mut out, rec, dat).unwrap();
     assert_eq!(out, expect);
 }
 
@@ -40,14 +38,7 @@ pub fn test_compile(rec: &str, dat: &str, expect: &[u8]) {
 ///   verification.
 pub fn test_compile_mask(rec: &str, dat: &str, expect: &[u8], mask: &[u8]) -> Vec<u8> {
     let mut out = Vec::<u8>::new();
-    let mut compiler = Compiler::new(&mut out);
-    let node_root = compiler.tree.create_struct(None, "");
-    compiler.tree.populate_natives(node_root);
-    let node_rec = compiler.tree.parse_recipe_string(rec).unwrap();
-    compiler.tree.child(node_root, node_rec);
-    compiler.resolve_types(node_root);
-    let node_dat = compiler.tree.parse_dat_value_string(dat).unwrap();
-    compiler.write(node_rec, node_dat).unwrap();
+    write_from_string_with_recipe(&mut out, rec, dat).unwrap();
     let mut out_masked = out.clone();
     assert_eq!(expect.len(), mask.len()); // Required as zip won't check that
     for (a, b) in out_masked.iter_mut().zip(mask) {
@@ -71,14 +62,7 @@ where
     T: Recipe + Debug + Serialize + PartialEq + for<'a> Deserialize<'a>,
 {
     let mut out = Vec::<u8>::new();
-    let mut compiler = Compiler::new(&mut out);
-    let node_root = compiler.tree.create_struct(None, "");
-    compiler.tree.populate_natives(node_root);
-    let node_rec = compiler.tree.parse_recipe_string(rec).unwrap();
-    compiler.tree.child(node_root, node_rec);
-    compiler.resolve_types(node_root);
-    let node_dat = compiler.tree.parse_dat_value_string(dat).unwrap();
-    compiler.write(node_rec, node_dat).unwrap();
+    write_from_string_with_recipe(&mut out, rec, dat).unwrap();
     if let Some(bin) = bin {
         assert_eq!(out, bin);
         assert_eq!(bincode::serialize(&val).unwrap(), bin);

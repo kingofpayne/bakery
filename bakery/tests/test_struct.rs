@@ -33,34 +33,42 @@ fn test_basic_struct() {
 #[test]
 fn test_generic_struct() {
     test_compile(
-        "struct Vector<T> {\n\
-            x: T,\n\
-            y: T\n\
-        },\n\
-        v: Vector<i32>,
-        w: Vector<bool>",
-        "v: { x: 42, y: 84 },\n\
-            w: { x: false, y: true }",
+        "struct {
+            struct Vector<T> {
+                x: T,
+                y: T
+            },
+            v: Vector<i32>,
+            w: Vector<bool>
+        }",
+        "{
+            v: { x: 42, y: 84 },
+            w: { x: false, y: true }
+        }",
         &hex!("2a000000540000000001"),
     );
 
     test_compile(
-        "struct Vector<T1, T2> {\n\
-            x: T1,\n\
-            y: T2\n\
-        },\n\
-        v: Vector<i32, bool>",
-        "v: { x: 42, y: true }",
+        "struct {
+            struct Vector<T1, T2> {
+                x: T1,
+                y: T2
+            },
+            v: Vector<i32, bool>
+        }",
+        "{ v: { x: 42, y: true } }",
         &hex!("2a00000001"),
     );
 
     test_compile(
-        "struct Vector<T> {\n\
-            x: T,\n\
-            y: T\n\
-        },\n\
-        v: Vector<Vector<u32>>",
-        "v: { x: { x: 1, y: 2}, y: { x: 3, y: 4 } }",
+        "struct {
+            struct Vector<T> {
+                x: T,
+                y: T
+            },
+            v: Vector<Vector<u32>>
+        }",
+        "{ v: { x: { x: 1, y: 2}, y: { x: 3, y: 4 } } }",
         &hex!("01000000020000000300000004000000"),
     );
 }
