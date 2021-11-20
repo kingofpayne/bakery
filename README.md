@@ -4,7 +4,7 @@ A Rust library to deserialize binary objects from structured text data files.
 
 ## Basic example
 
-    use bakery::load_struct_from_string;
+    use bakery::load_from_string;
     use bakery_derive::Recipe;
     use serde::Deserialize;
     
@@ -15,7 +15,7 @@ A Rust library to deserialize binary objects from structured text data files.
         fullscreen: bool
     }
     
-    let config: GameConfig = load_struct_from_string("width: 1024, height: 768, fullscreen: true");
+    let config: GameConfig = load_from_string("width: 1024, height: 768, fullscreen: true");
 
 ## License
 
