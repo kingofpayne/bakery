@@ -12,7 +12,7 @@
 //! # Basic example
 //!
 //! ```
-//! use bakery::load_struct_from_string;
+//! use bakery::load_from_string;
 //! use bakery_derive::Recipe;
 //! use serde::Deserialize;
 //!
@@ -23,7 +23,7 @@
 //!     fullscreen: bool
 //! }
 //!
-//! let config: GameConfig = load_struct_from_string("width: 1024, height: 768, fullscreen: true");
+//! let config: GameConfig = load_from_string("width: 1024, height: 768, fullscreen: true");
 //! ```
 
 use num_bigint::{BigInt, Sign};
@@ -442,7 +442,7 @@ impl NodeTree {
     /// # Arguments
     ///
     /// * `rec` - Recipe string
-    fn parse_struct_recipe_string(&mut self, rec: &str) -> Result<u32, ParseError> {
+    pub fn parse_struct_recipe_string(&mut self, rec: &str) -> Result<u32, ParseError> {
         // Parse recipe
         let rec = rec.trim_start().trim_end();
         let mut pairs = MyParser::parse(Rule::file_rec, rec).unwrap();
@@ -1714,7 +1714,11 @@ impl Compiler<'_> {
                 // compilation.
                 if self.errors.len() == 0 {
                     // Parse data
-                    match self.tree.parse_dat_value_string(dat) {
+                    let parsed_dat = match self.tree.get(node_rec).content {
+                        NodeContent::RecStruct => self.tree.parse_dat_map_string(dat),
+                        _ => self.tree.parse_dat_value_string(dat)
+                    };
+                    match parsed_dat {
                         Ok(node_dat) => {
                             if let Err(e) = self.write(node_rec, node_dat) {
                                 self.error(CompilationError::IOError(e));
@@ -1941,7 +1945,7 @@ where
     return Ok(bincode::deserialize_from(file).unwrap());
 }
 
-/// Load an object from a string, with recipe built using `Recipe` trait.
+/// Load data from a string, with recipe built using [`Recipe`] trait.
 ///
 /// # Arguments
 ///
@@ -1949,10 +1953,27 @@ where
 ///
 /// # Example
 ///
+/// This example shows how to load a structure from a string:
 /// ```
 /// use bakery::load_from_string;
 /// use bakery_derive::Recipe;
 /// use serde::Deserialize;
+///
+/// #[derive(Recipe, Deserialize, Debug, PartialEq)]
+/// struct GameConfig {
+///     width: u32,
+///     height: u32,
+///     fullscreen: bool
+/// }
+///
+/// let config: GameConfig = load_from_string("width: 1024, height: 768, fullscreen: true");
+/// assert_eq!(config, GameConfig { width: 1024, height: 768, fullscreen: true });
+/// ```
+///
+/// This example shows how to load a list from a string. Note that the [`Recipe`] trait for [`Vec`] is
+/// implemented by the library.
+/// ```
+/// use bakery::load_from_string;
 ///
 /// let values: Vec<i32> = load_from_string("[1, 2, 3]");
 /// assert_eq!(values, vec![1, 2, 3]);
@@ -1964,44 +1985,10 @@ where
     let mut bin = Vec::<u8>::new();
     let mut compiler = Compiler::new(&mut bin);
     let nid_rec = T::recipe(&mut compiler.tree);
-    let nid_dat = compiler.tree.parse_dat_value_string(dat).unwrap();
-    compiler.resolve_types(nid_rec);
-    compiler.write(nid_rec, nid_dat).unwrap();
-    bincode::deserialize_from(&bin[..]).unwrap()
-}
-
-/// Load a structure from a string, with recipe built using `Recipe` trait, assuming the data
-/// string is a list of assignments (structure without enclosing braces).
-///
-/// # Arguments
-///
-/// * `dat` - Data string
-///
-/// # Example
-///
-/// ```
-/// use bakery::load_struct_from_string;
-/// use bakery_derive::Recipe;
-/// use serde::Deserialize;
-///
-/// #[derive(Recipe, Deserialize, Debug, PartialEq)]
-/// struct GameConfig {
-///     width: u32,
-///     height: u32,
-///     fullscreen: bool
-/// }
-///
-/// let config: GameConfig = load_struct_from_string("width: 1024, height: 768, fullscreen: true");
-/// assert_eq!(config, GameConfig { width: 1024, height: 768, fullscreen: true });
-/// ```
-pub fn load_struct_from_string<T>(dat: &str) -> T
-where
-    T: Recipe + DeserializeOwned,
-{
-    let mut bin = Vec::<u8>::new();
-    let mut compiler = Compiler::new(&mut bin);
-    let nid_rec = T::recipe(&mut compiler.tree);
-    let nid_dat = compiler.tree.parse_dat_map_string(dat).unwrap();
+    let nid_dat = match compiler.tree.get(nid_rec).content {
+        NodeContent::RecStruct => compiler.tree.parse_dat_map_string(dat).unwrap(),
+        _ => compiler.tree.parse_dat_value_string(dat).unwrap()
+    };
     compiler.resolve_types(nid_rec);
     compiler.write(nid_rec, nid_dat).unwrap();
     bincode::deserialize_from(&bin[..]).unwrap()

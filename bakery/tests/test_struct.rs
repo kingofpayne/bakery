@@ -14,7 +14,7 @@ fn test_basic_struct() {
 
     test_compile_ser(
         "struct { x: i32, y: i32 }",
-        "{ x: 42, y: 84 }",
+        "x: 42, y: 84",
         Some(&hex!("2a00000054000000")),
         Vector { x: 42, y: 84 },
     );
@@ -24,7 +24,7 @@ fn test_basic_struct() {
     struct Empty {}
     test_compile_ser(
         "struct { }",
-        "{}",
+        "",
         Some(&hex!("")),
         Empty {},
     );
@@ -41,10 +41,8 @@ fn test_generic_struct() {
             v: Vector<i32>,
             w: Vector<bool>
         }",
-        "{
-            v: { x: 42, y: 84 },
-            w: { x: false, y: true }
-        }",
+        "v: { x: 42, y: 84 },
+            w: { x: false, y: true }",
         &hex!("2a000000540000000001"),
     );
 
@@ -56,7 +54,7 @@ fn test_generic_struct() {
             },
             v: Vector<i32, bool>
         }",
-        "{ v: { x: 42, y: true } }",
+        "v: { x: 42, y: true }",
         &hex!("2a00000001"),
     );
 
@@ -68,7 +66,7 @@ fn test_generic_struct() {
             },
             v: Vector<Vector<u32>>
         }",
-        "{ v: { x: { x: 1, y: 2}, y: { x: 3, y: 4 } } }",
+        "v: { x: { x: 1, y: 2}, y: { x: 3, y: 4 } }",
         &hex!("01000000020000000300000004000000"),
     );
 }

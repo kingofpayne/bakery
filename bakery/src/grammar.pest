@@ -42,7 +42,7 @@ dat_list = { "[" ~ dat_value ~ ("," ~ dat_value)* ~ "]" }
 
 dat_value = _{ float | int | dat_enum | dat_map | dat_tuple | dat_list }
 dat_assignment = { dat_value ~ ":" ~ dat_value }
-dat = { (dat_assignment ~ ("," ~ dat_assignment)*)+ }
+dat = { (dat_assignment ~ ("," ~ dat_assignment)*)? }
 
 file_rec = { WHITESPACE* ~ rec_struct_declaration ~ ("," ~ rec_struct_declaration)* }
 file_dat = _{ WHITESPACE* ~ dat }
