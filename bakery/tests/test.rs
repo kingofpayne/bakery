@@ -21,7 +21,7 @@ fn test_derive_simple() {
         y: i32,
     }
 
-    let s = load_from_string::<S>("x: 1, y: 2");
+    let s = load_from_string::<S>("x: 1, y: 2").unwrap();
     assert_eq!(s, S { x: 1, y: 2 });
 }
 
@@ -39,7 +39,7 @@ fn test_derive_nested() {
         b: A,
     }
 
-    let s = load_from_string::<B>("a: { x: 1, y: 2 }, b: { x: 3, y: 4 }");
+    let s = load_from_string::<B>("a: { x: 1, y: 2 }, b: { x: 3, y: 4 }").unwrap();
     assert_eq!(
         s,
         B {
@@ -63,7 +63,7 @@ fn test_derive_generic() {
         b: A<bool>,
     }
 
-    let s = load_from_string::<B>("a: { x: 1, y: 2 }, b: { x: true, y: false }");
+    let s = load_from_string::<B>("a: { x: 1, y: 2 }, b: { x: true, y: false }").unwrap();
     assert_eq!(
         s,
         B {

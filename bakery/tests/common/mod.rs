@@ -68,7 +68,7 @@ where
         assert_eq!(bincode::serialize(&val).unwrap(), bin);
     }
     assert_eq!(bincode::deserialize::<T>(&out).unwrap(), val);
-    assert_eq!(load_from_string::<T>(dat), val);
+    assert_eq!(load_from_string::<T>(dat).unwrap(), val);
 }
 
 /// Tests loading data from a string using Recipe trait
@@ -82,7 +82,7 @@ where
     T: Recipe + Debug + PartialEq + for<'a> Deserialize<'a>
 {
     assert_eq!(
-        load_from_string::<T>(dat),
+        load_from_string::<T>(dat).unwrap(),
         expected
     )
 }

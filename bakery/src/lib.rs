@@ -23,7 +23,7 @@
 //!     fullscreen: bool
 //! }
 //!
-//! let config: GameConfig = load_from_string("width: 1024, height: 768, fullscreen: true");
+//! let config: GameConfig = load_from_string("width: 1024, height: 768, fullscreen: true").unwrap();
 //! ```
 
 use num_bigint::{BigInt, Sign};
@@ -50,12 +50,6 @@ struct MyParser;
 
 type WriteResult = Result<(), std::io::Error>;
 
-#[derive(Debug)]
-pub enum ParseError {
-    IncompleteDatParse,
-    IncompleteRecParse(usize),
-}
-
 enum CompilationError {
     DataNotStruct(u32),
     EnumTypeIsNotInt(u32),
@@ -77,7 +71,6 @@ enum CompilationError {
         current: usize,
     },
     IOError(std::io::Error),
-    ParseError(ParseError),
     RedefinedValue(u32),
     TupleSizeMismatch {
         node_tuple: u32,
@@ -89,12 +82,6 @@ enum CompilationError {
         node: u32,
     },
     ValueOutOfBounds(u32),
-}
-
-impl From<ParseError> for CompilationError {
-    fn from(e: ParseError) -> Self {
-        CompilationError::ParseError(e)
-    }
 }
 
 #[derive(Debug)]
@@ -422,7 +409,7 @@ impl NodeTree {
     /// # Arguments
     ///
     /// * `rec` - Recipe string
-    pub fn parse_recipe_string(&mut self, rec: &str) -> Result<u32, ParseError> {
+    pub fn parse_recipe_string(&mut self, rec: &str) -> Result<u32, LoadError> {
         let rec = rec.trim_start().trim_end();
         let mut pairs = MyParser::parse(Rule::rec_type_anonymous, rec).unwrap();
         let pair = pairs.next().unwrap();
@@ -432,7 +419,7 @@ impl NodeTree {
         // pest will match as much as it can, so if there's garbage at the end, it will be ignored.
         // We don't want to ignore this garbage.
         if span.end() != rec.len() {
-            return Err(ParseError::IncompleteRecParse(span.end()));
+            return Err(LoadError::RecipeParseError);
         }
         Ok(self.parse_rec_type(Rc::new(rec.to_string()), pair))
     }
@@ -442,7 +429,7 @@ impl NodeTree {
     /// # Arguments
     ///
     /// * `rec` - Recipe string
-    pub fn parse_struct_recipe_string(&mut self, rec: &str) -> Result<u32, ParseError> {
+    pub fn parse_struct_recipe_string(&mut self, rec: &str) -> Result<u32, LoadError> {
         // Parse recipe
         let rec = rec.trim_start().trim_end();
         let mut pairs = MyParser::parse(Rule::file_rec, rec).unwrap();
@@ -453,7 +440,7 @@ impl NodeTree {
         // pest will match as much as it can, so if there's garbage at the end, it will be ignored.
         // We don't want to ignore this garbage.
         if span.end() != rec.len() {
-            return Err(ParseError::IncompleteRecParse(span.end()));
+            return Err(LoadError::RecipeParseError);
         }
 
         let nid = self.create(Node {
@@ -471,7 +458,7 @@ impl NodeTree {
     /// # Arguments
     ///
     /// * `dat` - Data string
-    pub fn parse_dat_value_string(&mut self, dat: &str) -> Result<u32, ParseError> {
+    pub fn parse_dat_value_string(&mut self, dat: &str) -> Result<u32, LoadError> {
         let dat = dat.trim_start().trim_end();
         let mut pairs = MyParser::parse(Rule::dat_value, dat).unwrap();
         let pair = pairs.next().unwrap();
@@ -479,7 +466,7 @@ impl NodeTree {
         assert!(pairs.next().is_none());
         // Check parsing completeness
         if span.end() != dat.len() {
-            Err(ParseError::IncompleteDatParse)
+            Err(LoadError::DataParseError)
         } else {
             Ok(self.parse_dat_value(Rc::new(dat.to_string()), pair))
         }
@@ -491,7 +478,7 @@ impl NodeTree {
     /// # Arguments
     ///
     /// * `dat` - Data string, struct format without the braces.
-    pub fn parse_dat_map_string(&mut self, dat: &str) -> Result<u32, ParseError> {
+    pub fn parse_dat_map_string(&mut self, dat: &str) -> Result<u32, LoadError> {
         let dat = dat.trim_start().trim_end();
         let mut pairs = MyParser::parse(Rule::file_dat, dat).unwrap();
         let pair = pairs.next().unwrap();
@@ -499,7 +486,7 @@ impl NodeTree {
         assert!(pairs.next().is_none());
         // Check parsing completeness
         if span.end() != dat.len() {
-            Err(ParseError::IncompleteDatParse)
+            Err(LoadError::DataParseError)
         } else {
             Ok(self.parse_dat_map(Rc::new(dat.to_string()), pair))
         }
@@ -1700,48 +1687,6 @@ impl Compiler<'_> {
             panic!();
         }
     }
-
-    pub fn compile(&mut self, rec: &str, dat: &str, print_errs: bool) -> Result<(), ()> {
-        self.tree.clear();
-        let node_root = self.tree.create_root_struct();
-        self.tree.populate_natives(node_root); // Add standard types
-        match self.tree.parse_recipe_string(rec) {
-            Ok(node_rec) => {
-                self.tree.child(node_root, node_rec);
-                self.resolve_types(node_root);
-                // resolve_types may generate errors if some types are unknown. In that case, the tree
-                // will have dangling references to types, which is not supported for the rest of the
-                // compilation.
-                if self.errors.len() == 0 {
-                    // Parse data
-                    let parsed_dat = match self.tree.get(node_rec).content {
-                        NodeContent::RecStruct => self.tree.parse_dat_map_string(dat),
-                        _ => self.tree.parse_dat_value_string(dat)
-                    };
-                    match parsed_dat {
-                        Ok(node_dat) => {
-                            if let Err(e) = self.write(node_rec, node_dat) {
-                                self.error(CompilationError::IOError(e));
-                            }
-                        }
-                        Err(e) => {
-                            self.errors.push(e.into());
-                        }
-                    }
-                }
-            }
-            Err(e) => {
-                self.error(e.into());
-            }
-        }
-        if print_errs {
-            print_errors(&self.tree, &self.errors);
-        }
-        if self.errors.len() > 0 {
-            return Err(());
-        }
-        Ok(())
-    }
 }
 
 fn print_errors(tree: &NodeTree, errors: &Vec<CompilationError>) {
@@ -1809,12 +1754,6 @@ fn print_errors(tree: &NodeTree, errors: &Vec<CompilationError>) {
                     current
                 );
             }
-            CompilationError::ParseError(e) => match e {
-                ParseError::IncompleteDatParse => println!("Error: incomplete data parse"),
-                ParseError::IncompleteRecParse(nid) => {
-                    println!("Error: incomplete recipe parse, parsed {} characters", nid)
-                }
-            },
             CompilationError::IOError(e) => {
                 println!("Error: {}", e);
             }
@@ -1855,6 +1794,15 @@ pub enum LoadError {
     InvalidDatExtension,
     RecFileAccess,
     DatFileAccess,
+    IOError(std::io::Error),
+    RecipeParseError,
+    DataParseError
+}
+
+impl From<std::io::Error> for LoadError {
+    fn from(e: std::io::Error) -> Self {
+        LoadError::IOError(e)
+    }
 }
 
 /// Checks if a binary file needs to be compiled, by looking if the binary file exists and if its
@@ -1903,11 +1851,20 @@ pub fn write_from_string_with_recipe<'a>(out: &'a mut dyn std::io::Write, rec: &
     -> Result<(), LoadError>
 {
     let mut compiler = Compiler::new(out);
-    if let Err(()) = compiler.compile(rec, dat, true) {
+    let node_root = compiler.tree.create_root_struct();
+    compiler.tree.populate_natives(node_root);
+    let node_rec = compiler.tree.parse_recipe_string(rec).unwrap();
+    compiler.tree.child(node_root, node_rec);
+    compiler.resolve_types(node_rec);
+    if compiler.errors.len() > 0 {
         return Err(LoadError::CompilationErrors)
-    } else {
-        Ok(())
     }
+    let node_dat = match compiler.tree.get(node_rec).content {
+        NodeContent::RecStruct => compiler.tree.parse_dat_map_string(dat).unwrap(),
+        _ => compiler.tree.parse_dat_value_string(dat).unwrap()
+    };
+    compiler.write(node_rec, node_dat)?;
+    Ok(())
 }
 
 /// Load an object from a data file, with recipe built using Recipe trait.
@@ -1966,7 +1923,7 @@ where
 ///     fullscreen: bool
 /// }
 ///
-/// let config: GameConfig = load_from_string("width: 1024, height: 768, fullscreen: true");
+/// let config: GameConfig = load_from_string("width: 1024, height: 768, fullscreen: true").unwrap();
 /// assert_eq!(config, GameConfig { width: 1024, height: 768, fullscreen: true });
 /// ```
 ///
@@ -1975,10 +1932,10 @@ where
 /// ```
 /// use bakery::load_from_string;
 ///
-/// let values: Vec<i32> = load_from_string("[1, 2, 3]");
+/// let values: Vec<i32> = load_from_string("[1, 2, 3]").unwrap();
 /// assert_eq!(values, vec![1, 2, 3]);
 /// ```
-pub fn load_from_string<T>(dat: &str) -> T
+pub fn load_from_string<T>(dat: &str) -> Result<T, LoadError>
 where
     T: Recipe + DeserializeOwned,
 {
@@ -1986,12 +1943,12 @@ where
     let mut compiler = Compiler::new(&mut bin);
     let nid_rec = T::recipe(&mut compiler.tree);
     let nid_dat = match compiler.tree.get(nid_rec).content {
-        NodeContent::RecStruct => compiler.tree.parse_dat_map_string(dat).unwrap(),
-        _ => compiler.tree.parse_dat_value_string(dat).unwrap()
+        NodeContent::RecStruct => compiler.tree.parse_dat_map_string(dat)?,
+        _ => compiler.tree.parse_dat_value_string(dat)?
     };
     compiler.resolve_types(nid_rec);
     compiler.write(nid_rec, nid_dat).unwrap();
-    bincode::deserialize_from(&bin[..]).unwrap()
+    Ok(bincode::deserialize_from(&bin[..]).unwrap())
 }
 
 /// Load an object from a data file, given a recipe defined in a recipe file.
@@ -2041,10 +1998,7 @@ where
                 .unwrap();
 
             let mut file = File::create(bin_path.clone()).unwrap();
-            let mut compiler = Compiler::new(&mut file);
-            if let Err(()) = compiler.compile(&rec, &dat, true) {
-                return Err(LoadError::CompilationErrors);
-            }
+            write_from_string_with_recipe(&mut file, &rec, &dat)?;
         }
         Ok(false) => {}
         Err(e) => {
