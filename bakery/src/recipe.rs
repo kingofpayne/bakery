@@ -111,13 +111,13 @@ impl Recipe for i64 {
 
 impl Recipe for f32 {
     fn recipe(tree: &mut NodeTree) -> u32 {
-        tree.create(Node::new_builtin("f32", NodeContent::RecFloat { size: 32 } ))
+        tree.create(Node::new_builtin("f32", NodeContent::RecFloat { size: 32 }))
     }
 }
 
 impl Recipe for f64 {
     fn recipe(tree: &mut NodeTree) -> u32 {
-        tree.create(Node::new_builtin("f32", NodeContent::RecFloat { size: 64 } ))
+        tree.create(Node::new_builtin("f32", NodeContent::RecFloat { size: 64 }))
     }
 }
 
@@ -156,7 +156,7 @@ impl Recipe for bool {
     }
 }
 
-impl <T: Recipe> Recipe for Vec<T> {
+impl<T: Recipe> Recipe for Vec<T> {
     fn recipe(tree: &mut NodeTree) -> u32 {
         let t = T::recipe(tree);
         let nid = tree.create(Node::new_anonymous(NodeContent::RecList));
@@ -165,7 +165,7 @@ impl <T: Recipe> Recipe for Vec<T> {
     }
 }
 
-impl <K: Recipe, T: Recipe> Recipe for HashMap<K, T> {
+impl<K: Recipe, T: Recipe> Recipe for HashMap<K, T> {
     fn recipe(tree: &mut NodeTree) -> u32 {
         let node_k = K::recipe(tree);
         let node_t = T::recipe(tree);

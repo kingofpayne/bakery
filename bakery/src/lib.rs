@@ -352,9 +352,9 @@ impl NodeTree {
                 name: Some(name.to_string()),
                 source: None,
                 content: NodeContent::RecEnum {
-                    key_type: RecTypeId::Id(nid_key_type)
-                }
-            }
+                    key_type: RecTypeId::Id(nid_key_type),
+                },
+            },
         )
     }
 
@@ -368,10 +368,10 @@ impl NodeTree {
         self.create_with_parent(
             Some(parent),
             Node {
-                name:Some(name.to_string()),
+                name: Some(name.to_string()),
                 source: None,
-                content: NodeContent::RecEnumItem { value: value }
-            }
+                content: NodeContent::RecEnumItem { value: value },
+            },
         )
     }
 
@@ -381,10 +381,7 @@ impl NodeTree {
     ///
     /// * `parent` - Parent node
     pub fn create_tuple(&mut self, parent: Option<u32>) -> u32 {
-        self.create_with_parent(
-            parent,
-            Node::new_anonymous( NodeContent::RecTuple )
-        )
+        self.create_with_parent(parent, Node::new_anonymous(NodeContent::RecTuple))
     }
 
     /// Create a tuple item node and return node Id.
@@ -396,11 +393,9 @@ impl NodeTree {
     pub fn create_tuple_member(&mut self, parent: u32, ty: u32) -> u32 {
         self.create_with_parent(
             Some(parent),
-            Node::new_anonymous(
-                NodeContent::RecTupleMember {
-                    tid: RecTypeId::Id(ty)
-                }
-            )
+            Node::new_anonymous(NodeContent::RecTupleMember {
+                tid: RecTypeId::Id(ty),
+            }),
         )
     }
 
@@ -1796,7 +1791,7 @@ pub enum LoadError {
     DatFileAccess,
     IOError(std::io::Error),
     RecipeParseError,
-    DataParseError
+    DataParseError,
 }
 
 impl From<std::io::Error> for LoadError {
@@ -1847,9 +1842,11 @@ fn is_compilation_required(
 /// * `dest` - A writable stream
 /// * `rec` - Recipe string
 /// * `dat` - Data string
-pub fn write_from_string_with_recipe<'a>(out: &'a mut dyn std::io::Write, rec: &str, dat: &str)
-    -> Result<(), LoadError>
-{
+pub fn write_from_string_with_recipe<'a>(
+    out: &'a mut dyn std::io::Write,
+    rec: &str,
+    dat: &str,
+) -> Result<(), LoadError> {
     let mut compiler = Compiler::new(out);
     let node_root = compiler.tree.create_root_struct();
     compiler.tree.populate_natives(node_root);
@@ -1857,11 +1854,11 @@ pub fn write_from_string_with_recipe<'a>(out: &'a mut dyn std::io::Write, rec: &
     compiler.tree.child(node_root, node_rec);
     compiler.resolve_types(node_rec);
     if compiler.errors.len() > 0 {
-        return Err(LoadError::CompilationErrors)
+        return Err(LoadError::CompilationErrors);
     }
     let node_dat = match compiler.tree.get(node_rec).content {
         NodeContent::RecStruct => compiler.tree.parse_dat_map_string(dat).unwrap(),
-        _ => compiler.tree.parse_dat_value_string(dat).unwrap()
+        _ => compiler.tree.parse_dat_value_string(dat).unwrap(),
     };
     compiler.write(node_rec, node_dat)?;
     Ok(())
@@ -1944,7 +1941,7 @@ where
     let nid_rec = T::recipe(&mut compiler.tree);
     let nid_dat = match compiler.tree.get(nid_rec).content {
         NodeContent::RecStruct => compiler.tree.parse_dat_map_string(dat)?,
-        _ => compiler.tree.parse_dat_value_string(dat)?
+        _ => compiler.tree.parse_dat_value_string(dat)?,
     };
     compiler.resolve_types(nid_rec);
     compiler.write(nid_rec, nid_dat).unwrap();

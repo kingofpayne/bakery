@@ -83,34 +83,14 @@ fn test_i32() {
     let rec = "i32";
     test_compile_ser(rec, "0", Some(&hex!("00000000")), 0i32);
     test_compile_ser(rec, "-1", Some(&hex!("ffffffff")), -1i32);
-    test_compile_ser(
-        rec,
-        "-2147483648",
-        Some(&hex!("00000080")),
-        -2147483648i32,
-    );
+    test_compile_ser(rec, "-2147483648", Some(&hex!("00000080")), -2147483648i32);
     test_compile_ser(rec, "2147483647", Some(&hex!("ffffff7f")), 2147483647i32);
     // Random vectors
     test_compile_ser(rec, "463957049", Some(&hex!("396ca71b")), 463957049i32);
-    test_compile_ser(
-        rec,
-        "-1534200772",
-        Some(&hex!("3cf48da4")),
-        -1534200772i32,
-    );
+    test_compile_ser(rec, "-1534200772", Some(&hex!("3cf48da4")), -1534200772i32);
     test_compile_ser(rec, "-655069093", Some(&hex!("5b70f4d8")), -655069093i32);
-    test_compile_ser(
-        rec,
-        "-1593580764",
-        Some(&hex!("24e303a1")),
-        -1593580764i32,
-    );
-    test_compile_ser(
-        rec,
-        "-2011365495",
-        Some(&hex!("89ff1c88")),
-        -2011365495i32,
-    );
+    test_compile_ser(rec, "-1593580764", Some(&hex!("24e303a1")), -1593580764i32);
+    test_compile_ser(rec, "-2011365495", Some(&hex!("89ff1c88")), -2011365495i32);
     test_compile_ser(rec, "791315362", Some(&hex!("a2832a2f")), 791315362i32);
     test_compile_ser(rec, "-395676156", Some(&hex!("04766ae8")), -395676156i32);
     test_compile_ser(rec, "477225567", Some(&hex!("5fe2711c")), 477225567i32);

@@ -1,7 +1,7 @@
 use hex_literal::hex;
 mod common;
 use bakery_derive::Recipe;
-use common::{test_compile_ser};
+use common::test_compile_ser;
 use serde::{Deserialize, Serialize};
 
 #[test]
@@ -30,13 +30,13 @@ fn test_generic_struct_1() {
     #[derive(Recipe, Debug, PartialEq, Serialize, Deserialize)]
     struct Vector<T> {
         x: T,
-        y: T
+        y: T,
     }
 
     #[derive(Recipe, Debug, PartialEq, Serialize, Deserialize)]
     struct Struct {
         v: Vector<i32>,
-        w: Vector<bool>
+        w: Vector<bool>,
     }
 
     test_compile_ser(
@@ -52,15 +52,9 @@ fn test_generic_struct_1() {
             w: { x: false, y: true }",
         Some(&hex!("2a000000540000000001")),
         Struct {
-            v: Vector {
-                x: 42,
-                y: 84
-            },
-            w: Vector {
-                x: false,
-                y: true
-            }
-        }
+            v: Vector { x: 42, y: 84 },
+            w: Vector { x: false, y: true },
+        },
     );
 }
 
@@ -69,7 +63,7 @@ fn test_generic_struct_2() {
     #[derive(Recipe, Debug, PartialEq, Serialize, Deserialize)]
     struct Vector<T1, T2> {
         x: T1,
-        y: T2
+        y: T2,
     }
 
     #[derive(Recipe, Debug, PartialEq, Serialize, Deserialize)]
@@ -88,11 +82,8 @@ fn test_generic_struct_2() {
         "v: { x: 42, y: true }",
         Some(&hex!("2a00000001")),
         Struct {
-            v: Vector {
-                x: 42,
-                y: true
-            }
-        }
+            v: Vector { x: 42, y: true },
+        },
     );
 }
 
@@ -101,12 +92,12 @@ fn test_generic_struct_nested() {
     #[derive(Recipe, Debug, PartialEq, Serialize, Deserialize)]
     struct Vector<T> {
         x: T,
-        y: T
+        y: T,
     }
 
     #[derive(Recipe, Debug, PartialEq, Serialize, Deserialize)]
     struct Struct {
-        v: Vector<Vector<u32>>
+        v: Vector<Vector<u32>>,
     }
 
     test_compile_ser(
@@ -121,15 +112,9 @@ fn test_generic_struct_nested() {
         Some(&hex!("01000000020000000300000004000000")),
         Struct {
             v: Vector {
-                x: Vector {
-                    x: 1,
-                    y: 2
-                },
-                y: Vector {
-                    x: 3,
-                    y: 4
-                }
-            }
-        }
+                x: Vector { x: 1, y: 2 },
+                y: Vector { x: 3, y: 4 },
+            },
+        },
     );
 }

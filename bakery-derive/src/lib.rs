@@ -36,7 +36,7 @@ pub fn derive_bakery(input: proc_macro::TokenStream) -> proc_macro::TokenStream 
                 nid
             }
         }
-        Data::Union(_) => unimplemented!()
+        Data::Union(_) => unimplemented!(),
     };
 
     let expanded = quote! {
