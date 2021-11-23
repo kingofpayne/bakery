@@ -1,4 +1,4 @@
-use bakery::{Recipe, load_from_string, write_from_string_with_recipe};
+use bakery::{load_from_string, write_from_string_with_recipe, Recipe};
 use core::fmt::Debug;
 use serde::{Deserialize, Serialize};
 use std::cmp::PartialEq;
@@ -49,7 +49,7 @@ pub fn test_compile_mask(rec: &str, dat: &str, expect: &[u8], mask: &[u8]) -> Ve
 }
 
 /// Compile data according to a recipe, check the binary result, check serialization and deserialization.
-/// Panics if a test fails.
+/// Panics if a test fails. Both derived and string recipes are tested.
 ///
 /// # Arguments
 ///
@@ -79,10 +79,7 @@ where
 /// * `dat` - Loaded data string
 pub fn test_load_from_string<T>(dat: &str, expected: T)
 where
-    T: Recipe + Debug + PartialEq + for<'a> Deserialize<'a>
+    T: Recipe + Debug + PartialEq + for<'a> Deserialize<'a>,
 {
-    assert_eq!(
-        load_from_string::<T>(dat).unwrap(),
-        expected
-    )
+    assert_eq!(load_from_string::<T>(dat).unwrap(), expected)
 }

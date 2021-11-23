@@ -1,6 +1,62 @@
+use bakery::write_from_string_with_recipe;
 use hex_literal::hex;
 mod common;
-use common::{test_compile, test_compile_mask, test_compile_ser, vec_and};
+use bakery::{load_from_string, Recipe};
+use common::{test_compile_ser, vec_and};
+use core::fmt::Debug;
+use serde::{Deserialize, Serialize};
+
+trait NaN {
+    fn float_is_nan(&self) -> bool;
+}
+
+impl NaN for f32 {
+    fn float_is_nan(&self) -> bool {
+        self.is_nan()
+    }
+}
+
+impl NaN for f64 {
+    fn float_is_nan(&self) -> bool {
+        self.is_nan()
+    }
+}
+
+/// Similar to `test_compile_sr` for NaN float numbers, tests only a subset of the resulting bytes.
+/// Length of `mask` must be equal to length of `expect`.
+///
+/// To retrict the generic parameter T to be f32 or f64, T must implement the trait [`NaN`].
+///
+/// # Arguments
+///
+/// * `rec` - Recipe string
+/// * `expect` - Expected binary result. Untested bits must be set to 0.
+/// * `mask` - Test mask applied to `expect`. Each set bit enables the corresponding bit
+///   verification.
+/// * `mantissa_expect` - Expected value for mantissa testing
+/// * `mantissa_mask` - Mantissa testing mask
+fn test_compile_nan<T>(
+    rec: &str,
+    expect: &[u8],
+    mask: &[u8],
+    mantissa_expect: &[u8],
+    mantissa_mask: &[u8],
+) where
+    T: NaN + Recipe + Debug + Serialize + for<'a> Deserialize<'a>,
+{
+    let dat = "NaN";
+    let mut out = Vec::<u8>::new();
+    write_from_string_with_recipe(&mut out, rec, dat).unwrap();
+    let mut out_masked = out.clone();
+    assert_eq!(expect.len(), mask.len()); // Required as zip won't check that
+    for (a, b) in out_masked.iter_mut().zip(mask) {
+        *a = *a & b;
+    }
+    assert_eq!(out_masked, expect);
+    assert!(vec_and(&out, &mantissa_mask.to_vec()) != mantissa_expect);
+    assert!(bincode::deserialize::<T>(&out).unwrap().float_is_nan());
+    assert!(load_from_string::<T>(dat).unwrap().float_is_nan());
+}
 
 #[test]
 fn test_f32() {
@@ -11,8 +67,13 @@ fn test_f32() {
     // Multiple values are possible for NaN.
     // The exponent must have all bits set to 1.
     // The mantissa must not be null.
-    let out = test_compile_mask(rec, "NaN", &hex!("0000807f"), &hex!("0000807f"));
-    assert!(vec_and(&out, &hex!("ffff7f00").to_vec()) != &hex!("00000000"));
+    test_compile_nan::<f32>(
+        rec,
+        &hex!("0000807f"),
+        &hex!("0000807f"),
+        &hex!("00000000"),
+        &hex!("ffff7f00"),
+    );
 
     // Infinity
     test_compile_ser(rec, "inf", Some(&hex!("0000807f")), f32::INFINITY);
@@ -94,17 +155,22 @@ fn test_f64() {
     // Multiple values are possible for NaN.
     // The exponent must have all bits set to 1.
     // The mantissa must not be null.
-    let out = test_compile_mask(
+    test_compile_nan::<f64>(
         rec,
-        "NaN",
         &hex!("000000000000f07f"),
         &hex!("000000000000f07f"),
+        &hex!("0000000000000000").to_vec(),
+        &hex!("ffffffffffff0f00").to_vec(),
     );
-    assert!(vec_and(&out, &hex!("ffffffffffff0f00").to_vec()) != &hex!("0000000000000000"));
 
     // Infinity
     test_compile_ser(rec, "inf", Some(&hex!("000000000000f07f")), f64::INFINITY);
-    test_compile_ser(rec, "-inf", Some(&hex!("000000000000f0ff")), f64::NEG_INFINITY);
+    test_compile_ser(
+        rec,
+        "-inf",
+        Some(&hex!("000000000000f0ff")),
+        f64::NEG_INFINITY,
+    );
 
     // Test different formatting
     let pi_enc: Option<&[u8]> = Some(&hex!("182d4454fb210940"));

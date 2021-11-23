@@ -1,8 +1,8 @@
 use hex_literal::hex;
 mod common;
+use bakery_derive::Recipe;
 use common::{test_compile, test_compile_ser};
 use serde::{Deserialize, Serialize};
-use bakery_derive::Recipe;
 
 #[test]
 fn test_basic_enum() {
