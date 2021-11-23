@@ -1,8 +1,8 @@
 use hex_literal::hex;
 mod common;
-use common::{test_compile, test_compile_ser};
-use serde::{Deserialize, Serialize};
 use bakery_derive::Recipe;
+use common::{test_compile_ser};
+use serde::{Deserialize, Serialize};
 
 #[test]
 fn test_basic_struct() {
@@ -22,17 +22,24 @@ fn test_basic_struct() {
     // Test empty structures
     #[derive(Recipe, Debug, PartialEq, Serialize, Deserialize)]
     struct Empty {}
-    test_compile_ser(
-        "struct { }",
-        "",
-        Some(&hex!("")),
-        Empty {},
-    );
+    test_compile_ser("struct { }", "", Some(&hex!("")), Empty {});
 }
 
 #[test]
-fn test_generic_struct() {
-    test_compile(
+fn test_generic_struct_1() {
+    #[derive(Recipe, Debug, PartialEq, Serialize, Deserialize)]
+    struct Vector<T> {
+        x: T,
+        y: T
+    }
+
+    #[derive(Recipe, Debug, PartialEq, Serialize, Deserialize)]
+    struct Struct {
+        v: Vector<i32>,
+        w: Vector<bool>
+    }
+
+    test_compile_ser(
         "struct {
             struct Vector<T> {
                 x: T,
@@ -43,10 +50,34 @@ fn test_generic_struct() {
         }",
         "v: { x: 42, y: 84 },
             w: { x: false, y: true }",
-        &hex!("2a000000540000000001"),
+        Some(&hex!("2a000000540000000001")),
+        Struct {
+            v: Vector {
+                x: 42,
+                y: 84
+            },
+            w: Vector {
+                x: false,
+                y: true
+            }
+        }
     );
+}
 
-    test_compile(
+#[test]
+fn test_generic_struct_2() {
+    #[derive(Recipe, Debug, PartialEq, Serialize, Deserialize)]
+    struct Vector<T1, T2> {
+        x: T1,
+        y: T2
+    }
+
+    #[derive(Recipe, Debug, PartialEq, Serialize, Deserialize)]
+    struct Struct {
+        v: Vector<i32, bool>,
+    }
+
+    test_compile_ser(
         "struct {
             struct Vector<T1, T2> {
                 x: T1,
@@ -55,10 +86,30 @@ fn test_generic_struct() {
             v: Vector<i32, bool>
         }",
         "v: { x: 42, y: true }",
-        &hex!("2a00000001"),
+        Some(&hex!("2a00000001")),
+        Struct {
+            v: Vector {
+                x: 42,
+                y: true
+            }
+        }
     );
+}
 
-    test_compile(
+#[test]
+fn test_generic_struct_nested() {
+    #[derive(Recipe, Debug, PartialEq, Serialize, Deserialize)]
+    struct Vector<T> {
+        x: T,
+        y: T
+    }
+
+    #[derive(Recipe, Debug, PartialEq, Serialize, Deserialize)]
+    struct Struct {
+        v: Vector<Vector<u32>>
+    }
+
+    test_compile_ser(
         "struct {
             struct Vector<T> {
                 x: T,
@@ -67,6 +118,18 @@ fn test_generic_struct() {
             v: Vector<Vector<u32>>
         }",
         "v: { x: { x: 1, y: 2}, y: { x: 3, y: 4 } }",
-        &hex!("01000000020000000300000004000000"),
+        Some(&hex!("01000000020000000300000004000000")),
+        Struct {
+            v: Vector {
+                x: Vector {
+                    x: 1,
+                    y: 2
+                },
+                y: Vector {
+                    x: 3,
+                    y: 4
+                }
+            }
+        }
     );
 }

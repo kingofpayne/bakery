@@ -13,19 +13,6 @@ pub fn vec_and(a: &Vec<u8>, b: &Vec<u8>) -> Vec<u8> {
     result
 }
 
-/// Compile data according to a recipe and check the binary result
-///
-/// # Arguments
-///
-/// * `rec` - Recipe string
-/// * `dat` - Data string
-/// * `expect` - Expected binary result
-pub fn test_compile(rec: &str, dat: &str, expect: &[u8]) {
-    let mut out = Vec::<u8>::new();
-    write_from_string_with_recipe(&mut out, rec, dat).unwrap();
-    assert_eq!(out, expect);
-}
-
 /// Similar to `test_compile` but test only a subset of the resulting bytes
 /// Length of `mask` must be equal to length of `expect`.
 ///

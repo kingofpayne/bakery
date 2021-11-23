@@ -13,12 +13,7 @@ fn test_tuple() {
         Some(&hex!("10baf388")),
         (-1997293040i32,),
     );
-    test_compile_ser(
-        rec,
-        "(150517066)",
-        Some(&hex!("4ab5f808")),
-        (150517066i32,),
-    );
+    test_compile_ser(rec, "(150517066)", Some(&hex!("4ab5f808")), (150517066i32,));
 
     let rec = "(bool, u32)";
     test_compile_ser(

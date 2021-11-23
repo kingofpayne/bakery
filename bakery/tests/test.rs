@@ -2,15 +2,15 @@ use hex_literal::hex;
 mod common;
 use bakery::load_from_string;
 use bakery_derive::*;
-use common::test_compile;
+use common::test_compile_ser;
 use serde::Deserialize;
 
 #[test]
 fn test_whitespaces() {
-    test_compile("  i8", "  42", &hex!("2a"));
-    test_compile(" i8", " 42", &hex!("2a"));
-    test_compile("i8 ", "42 ", &hex!("2a"));
-    test_compile("i8  ", "42  ", &hex!("2a"));
+    test_compile_ser("  i8", "  42", Some(&hex!("2a")), 42i8);
+    test_compile_ser(" i8", " 42", Some(&hex!("2a")), 42i8);
+    test_compile_ser("i8 ", "42 ", Some(&hex!("2a")), 42i8);
+    test_compile_ser("i8  ", "42  ", Some(&hex!("2a")), 42i8);
 }
 
 #[test]

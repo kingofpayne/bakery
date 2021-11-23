@@ -1,7 +1,7 @@
 use hex_literal::hex;
 mod common;
 use bakery_derive::Recipe;
-use common::{test_compile, test_compile_ser};
+use common::test_compile_ser;
 use serde::{Deserialize, Serialize};
 
 #[test]
@@ -91,7 +91,7 @@ fn test_inline_enum() {
         C,
     }
     let rec = "enum { A, B, C }";
-    test_compile(rec, "A", &hex!("00000000"));
-    test_compile(rec, "B", &hex!("01000000"));
-    test_compile(rec, "C", &hex!("02000000"));
+    test_compile_ser(rec, "A", Some(&hex!("00000000")), E::A);
+    test_compile_ser(rec, "B", Some(&hex!("01000000")), E::B);
+    test_compile_ser(rec, "C", Some(&hex!("02000000")), E::C);
 }
