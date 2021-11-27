@@ -1,0 +1,8 @@
+struct {
+    struct Vector<T> {
+        x: T,
+        y: T
+    },
+    a: Vector<u32>,
+    b: Vector<bool>
+}

@@ -1961,11 +1961,7 @@ where
 ///
 /// * `rec_path` - Path to the recipe file
 /// * `dat_path` - Path to the data file
-pub fn load_from_file_with_recipe<T>(
-    rec_path: &str,
-    dat_path: &str,
-    dest: &mut T,
-) -> Result<(), LoadError>
+pub fn load_from_file_with_recipe<T>(rec_path: &str, dat_path: &str) -> Result<T, LoadError>
 where
     T: DeserializeOwned,
 {
@@ -2008,7 +2004,5 @@ where
     }
 
     let file = File::open(bin_path).unwrap();
-    *dest = bincode::deserialize_from(file).unwrap();
-
-    Ok(())
+    Ok(bincode::deserialize_from(file).unwrap())
 }

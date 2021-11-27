@@ -2,7 +2,7 @@
 name = "bakery"
 description = "Deserialize binary objects from structured text data files"
 repository = "https://github.com/kingofpayne/bakery"
-version = "0.1.2"
+version = "0.1.3"
 authors = ["Olivier Hériveaux"]
 edition = "2018"
 license = "MIT OR Apache-2.0"

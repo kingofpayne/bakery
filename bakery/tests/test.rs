@@ -1,6 +1,7 @@
 use hex_literal::hex;
+use std::path::Path;
 mod common;
-use bakery::load_from_string;
+use bakery::{load_from_file, load_from_file_with_recipe, load_from_string};
 use bakery_derive::*;
 use common::test_compile_ser;
 use serde::Deserialize;
@@ -71,4 +72,76 @@ fn test_derive_generic() {
             b: A { x: true, y: false }
         }
     );
+}
+
+#[test]
+fn test_load_from_file() {
+    #[derive(Deserialize, PartialEq, Eq, Debug, Recipe)]
+    struct Vector<T> {
+        x: T,
+        y: T,
+    }
+
+    #[derive(Deserialize, PartialEq, Eq, Debug, Recipe)]
+    struct S {
+        a: Vector<u32>,
+        b: Vector<bool>,
+    }
+
+    let s: S = load_from_file_with_recipe(
+        Path::new("tests")
+            .join("test.rec")
+            .into_os_string()
+            .to_str()
+            .unwrap(),
+        Path::new("tests")
+            .join("test.dat")
+            .into_os_string()
+            .to_str()
+            .unwrap(),
+    )
+    .unwrap();
+    assert_eq!(
+        s,
+        S {
+            a: Vector { x: 1, y: 2 },
+            b: Vector { x: false, y: true }
+        }
+    );
+
+    // Remove cache for next test
+    std::fs::remove_file(
+        Path::new("tests")
+            .join("test.bin")
+            .into_os_string()
+            .to_str()
+            .unwrap(),
+    )
+    .unwrap();
+
+    let s: S = load_from_file(
+        Path::new("tests")
+            .join("test.dat")
+            .into_os_string()
+            .to_str()
+            .unwrap(),
+    )
+    .unwrap();
+    assert_eq!(
+        s,
+        S {
+            a: Vector { x: 1, y: 2 },
+            b: Vector { x: false, y: true }
+        }
+    );
+
+    // Remove cache for next test
+    std::fs::remove_file(
+        Path::new("tests")
+            .join("test.bin")
+            .into_os_string()
+            .to_str()
+            .unwrap(),
+    )
+    .unwrap();
 }
