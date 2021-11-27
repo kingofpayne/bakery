@@ -1,13 +1,14 @@
 //! This crate allows loading text data files as serialized binary objects.
 //!
 //! Data files can have a syntax similar to rust data definition, and must follow a recipe (or
-//! schema) defined either in a recipe file or built in the program using the `Recipe` trait.
+//! schema) defined either in a recipe file or built in the program using the [`Recipe`] trait.
 //!
 //! When a data file is parsed, a binary representation is built and cached into a binary file, and
-//! this binary representation can then be easily deserialized using, for instance, serde and
-//! bincode libraries. If the data file is not modified, loading the data is then very fast. This
-//! is very efficient for instance for storing complex asset files in a comprehensible and easily
-//! modifiable format. It may also be useful for loading configuration files.
+//! this binary representation can then be easily deserialized using, for instance, `serde` and
+//! `bincode` crates. If the data file has not been modified, loading it uses the cache and is
+//! therefore very fast. This is very efficient for instance for storing complex asset files in a
+//! comprehensible and easily modifiable format. It may also be useful for loading configuration
+//! files.
 //!
 //! # Basic example
 //!
@@ -1864,15 +1865,18 @@ pub fn write_from_string_with_recipe<'a>(
     Ok(())
 }
 
-/// Load an object from a data file, with recipe built using Recipe trait.
+/// Load an object from a data file, with recipe built using [`Recipe`] trait.
 ///
 /// If the binary image of the data file does not exist or is deprecated, it is built and cached.
 /// If the recipe changes because the program code has been modified, binary must be removed
 /// manually as it is currently not detected.
 ///
+/// The cache file has the same path as the data file, with the `.dat` extension replaced with
+/// `.bin`.
+///
 /// # Arguments
 ///
-/// * `dat_path` - Path to the data file. File extension must be .dat
+/// * `dat_path` - Path to the data file. File extension must be `.dat`.
 pub fn load_from_file<T>(path: &str) -> Result<T, LoadError>
 where
     T: DeserializeOwned + Recipe,
