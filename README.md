@@ -1,5 +1,9 @@
 # Bakery
 
+[![Test Status](https://github.com/kingofpayne/bakery/actions/workflows/rust.yml/badge.svg)](https://github.com/kingofpayne/bakery/actions)
+[![Crate](https://img.shields.io/crates/v/bakery.svg)](https://crates.io/crates/bakery)
+[![API](https://docs.rs/bakery/badge.svg)](https://docs.rs/bakery)
+
 A Rust library to deserialize binary objects from structured text data files.
 
 ## Basic example
